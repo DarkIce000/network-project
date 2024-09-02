@@ -1,14 +1,96 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
+from rest_framework import serializers
+from rest_framework.decorators import api_view
 
-from .models import User
+from .models import User, Post
+import json
 
-
+@login_required(login_url="login")
 def index(request):
-    return render(request, "network/index.html")
+
+    loggedin_user = User.objects.get(username=request.user)
+    # handle the posting 
+    user_followings_posts = Post.objects.filter(Q(user__in=loggedin_user.followings.all()) | Q(user=loggedin_user)).order_by("-timestamp")
+    if request.method == "POST":
+        data  = json.loads(request.body)
+        new_post = Post(user=loggedin_user, post_text=data['postText'])
+        new_post.save()
+        return JsonResponse([ post.serialize() for post in user_followings_posts ], safe=False)
+
+    
+    # handle like or unlike 
+    if request.method == "PUT":
+        data  = json.loads(request.body)
+        post_id = data['postId']
+        get_post = get_object_or_404(Post, id=post_id)
+
+        if (loggedin_user in get_post.like_users.all()):
+            get_post.like_users.remove(loggedin_user)
+        else:
+            get_post.like_users.add(loggedin_user)
+
+        get_post.save()
+        
+        return JsonResponse([ get_post.serialize()], safe=False)
+
+    # get followings post for the feed to the logged in user
+    if  request.method == "FEED":
+        # gettng all post
+        return JsonResponse([ post.serialize() for post in user_followings_posts ], safe=False)
+    
+    return render(request, "network/index.html", {
+        "loggedin_user" : loggedin_user
+    })
+
+@login_required(login_url="login")
+def profile(request, username):
+    # loggedin_user = get_object_or_404(User, username=request.user)
+    # profile_user = get_object_or_404(User, username=username)
+    try: 
+        loggedin_user = User.objects.get(username=request.user)
+    except:
+        return HttpResponse('Something Went Wrong in loggedin user')
+    
+    try:
+        profile_user = User.objects.get(username=username)
+    except: 
+        return HttpResponse('Something Went Wrong in profile user')
+
+
+    if request.method == "PUT":
+        data = json.loads(request.body)
+        if (data['follow'] == True):
+            loggedin_user.followings.add(profile_user)
+        else: 
+            loggedin_user.followings.remove(profile_user)
+
+        loggedin_user.save()
+        print(loggedin_user.followings.all())
+        return JsonResponse({
+            "success" : "user is saved"
+        }, safe=False)
+
+    if request.method == "FEED":
+        posts = Post.objects.filter(user=profile_user)
+        return JsonResponse([post.serialize() for post in posts ], safe=False)
+
+    return render(request, "network/profile.html", {
+        "loggedin_user": loggedin_user, 
+        "profile_user": profile_user
+    })
+
+@login_required(login_url="login")
+def followings(request):
+    loggedin_user = User.objects.get(username=request.user)
+    return render(request, "network/followings.html", {
+        "followings": loggedin_user.followings.all()
+    })
 
 
 def login_view(request):
@@ -42,16 +124,22 @@ def register(request):
         email = request.POST["email"]
 
         # Ensure password matches confirmation
-        password = request.POST["password"]
-        confirmation = request.POST["confirmation"]
+        password      = request.POST["password"]
+        confirmation  = request.POST["confirmation"]
+
+        try: 
+            profile_img  = request.FILES['profile-image']
+        except:
+            profile_img = None
+
         if password != confirmation:
             return render(request, "network/register.html", {
                 "message": "Passwords must match."
             })
-
+        
         # Attempt to create new user
         try:
-            user = User.objects.create_user(username, email, password)
+            user = User.objects.create_user(username, email, password, profile_img=profile_img)
             user.save()
         except IntegrityError:
             return render(request, "network/register.html", {

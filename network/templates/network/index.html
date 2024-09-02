@@ -1,5 +1,31 @@
 {% extends "network/layout.html" %}
+{% load static %}
 
 {% block body %}
-    TODO
+<div class="row">
+    <div class="col" id="home">
+        <div class="row">
+            <div class="col" id="post-form">
+                <!-- input form from index.js -->
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col" id="post-div">
+                <!-- input from index.js -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="row">
+    <div class="col" id="profile">
+
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'network/js/index.js' %}"></script>
 {% endblock %}
