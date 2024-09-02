@@ -5,8 +5,7 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
-from rest_framework import serializers
-from rest_framework.decorators import api_view
+from django.core import serializers
 
 from .models import User, Post
 import json
@@ -50,8 +49,6 @@ def index(request):
 
 @login_required(login_url="login")
 def profile(request, username):
-    # loggedin_user = get_object_or_404(User, username=request.user)
-    # profile_user = get_object_or_404(User, username=username)
     try: 
         loggedin_user = User.objects.get(username=request.user)
     except:
@@ -62,20 +59,18 @@ def profile(request, username):
     except: 
         return HttpResponse('Something Went Wrong in profile user')
 
-
+    # follow or unfollow 
     if request.method == "PUT":
-        data = json.loads(request.body)
-        if (data['follow'] == True):
-            loggedin_user.followings.add(profile_user)
-        else: 
+        if (profile_user in loggedin_user.followings.all()):
             loggedin_user.followings.remove(profile_user)
-
+        else: 
+            loggedin_user.followings.add(profile_user)
         loggedin_user.save()
-        print(loggedin_user.followings.all())
-        return JsonResponse({
-            "success" : "user is saved"
-        }, safe=False)
 
+        # logged in user profile information
+        return JsonResponse([loggedin_user.serialize()], safe=False)
+
+    # user post
     if request.method == "FEED":
         posts = Post.objects.filter(user=profile_user)
         return JsonResponse([post.serialize() for post in posts ], safe=False)

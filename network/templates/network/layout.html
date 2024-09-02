@@ -12,10 +12,10 @@
 
 <body>
 
-    <input type="text" value="{{ request.user }}" id="loggedin_user" hidden>
+    <input type="text" value="{{ request.user }}" name="loggedin_user" hidden>
     <input type="text" value="{{ csrf_token }}" name="csrfmiddlewaretoken" hidden>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Network</a>
+        <a class="navbar-brand" href="/">Network</a>
 
         <div>
             <ul class="navbar-nav mr-auto">

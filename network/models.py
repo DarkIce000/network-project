@@ -8,11 +8,11 @@ class User(AbstractUser):
 
     def serialize(self):
         return{
-            "id": self.id,
+            "id": self.pk,
             "email": self.email,
             "username": self.username, 
-            "picture": self.profile_img.url,
-            "followings":  [following for following in self.followings.all()],
+            "picture": self.profile_img.url if self.profile_img else None,
+            "followings":  [following.username for following in self.followings.all()],
         }
 
 
