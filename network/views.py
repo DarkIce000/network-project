@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
-from django.core import serializers
+from django.core import serializers, paginator
 
 from .models import User, Post
 import json
@@ -41,11 +41,33 @@ def index(request):
     # get followings post for the feed to the logged in user
     if  request.method == "FEED":
         # gettng all post
-        return JsonResponse([ post.serialize() for post in user_followings_posts ], safe=False)
+        data = json.loads(request.body)
+        p = paginator.Paginator(user_followings_posts, 5)
+        return JsonResponse([ post.serialize() for post in p.page(data['pageNumber']) ], safe=False)
     
     return render(request, "network/index.html", {
         "loggedin_user" : loggedin_user
     })
+
+
+@login_required(login_url="login")
+def edit_post(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        get_post = get_object_or_404(Post, id=data['postId'])
+
+        # if loggedin user is post owner then he can edit
+        print(request.user, get_post.user.username )
+        if str(request.user) == str(get_post.user.username): 
+            get_post.post_text = data['postText']
+            get_post.save()
+            return JsonResponse(get_post.serialize(), safe = False)
+        else: 
+            return JsonResponse({"error": "You are not authorized to edit this post"})
+        
+
+    return HttpResponse(f'We are building this site')
+
 
 @login_required(login_url="login")
 def profile(request, username):
@@ -72,20 +94,36 @@ def profile(request, username):
 
     # user post
     if request.method == "FEED":
+        data = json.loads(request.body)
         posts = Post.objects.filter(user=profile_user)
-        return JsonResponse([post.serialize() for post in posts ], safe=False)
+        p = paginator.Paginator(posts, 5)
+        return JsonResponse([post.serialize() for post in p.page(data['pageNumber'])], safe=False)
 
     return render(request, "network/profile.html", {
         "loggedin_user": loggedin_user, 
         "profile_user": profile_user
     })
 
+
 @login_required(login_url="login")
 def followings(request):
     loggedin_user = User.objects.get(username=request.user)
+    if request.method == "FEED":
+        return JsonResponse([ user.serialize() for user in loggedin_user.followings.all() ], safe=False)
+
     return render(request, "network/followings.html", {
         "followings": loggedin_user.followings.all()
     })
+
+
+def allposts(request):
+    allposts = Post.objects.all()
+    p = paginator.Paginator(allposts, 10)
+    if request.method == "FEED":
+        data = json.loads(request.body)
+        return JsonResponse([ post.serialize() for post in p.page(data['pageNumber']) ], safe=False)
+    
+    return render(request, 'network/allposts.html')
 
 
 def login_view(request):

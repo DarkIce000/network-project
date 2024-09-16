@@ -3,8 +3,9 @@ from django.db import models
 
 
 class User(AbstractUser):
+    about = models.CharField(max_length=200, blank=True)
     profile_img = models.ImageField(upload_to="profile/", null=True, blank=True)
-    followings = models.ManyToManyField("self", null=True, blank=True)
+    followings = models.ManyToManyField("self", blank=True, symmetrical=False)
 
     def serialize(self):
         return{

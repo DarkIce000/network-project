@@ -1,0 +1,47 @@
+{% extends "network/layout.html" %}
+{% load static %}
+
+{% block body %}
+    <div class="row my-5">
+        <div class="col">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    {% if profile_user.profile_img %}
+                        <img src="{{ profile_user.profile_img.url }}" class="rounded img-fluid" alt="" style="height:300px; width:300px">
+                    {% else %}
+                        <img src="{% static 'network/img/OIP.jpeg' %}" class="rounded img-fluid" alt="" style="height:300px; width:300px">
+                    {% endif %}
+                </div>
+                <div class="col-12 mb-3 d-flex">
+                    <p><span id="followings"></span>Following</p>
+                    {% csrf_token %}
+                    {% if profile_user in loggedin_user.followings.all %}
+                        <button class="btn btn-primary mx-3" id="follow-btn">Unfollow</button>
+                    {% else %}
+                        <button class="btn btn-primary mx-3" id="follow-btn">Follow</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="user-post">
+        <h1>Posts</h1>
+        <hr>
+        <div class="col" id="post-div">
+           <!-- post from the post.js goes here  -->
+        </div>
+    </div>
+
+    <div class="row my5-5">
+        <div class="col d-flex justify-content-center" id="pagination-div">
+            <!-- pagination logic goes here from js -->
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="{% static 'network/js/profile.js' %}" type="module"></script>
+    <script src="{% static 'network/js/feed.js' %}" type="module"></script>
+    <script src="{% static 'network/js/pagination.js' %}" type="module"></script>
+{% endblock %}

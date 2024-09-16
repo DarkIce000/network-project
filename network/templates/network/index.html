@@ -24,8 +24,18 @@
 
     </div>
 </div>
+
+<!-- pagination  -->
+<div class="row">
+    <div class="col" id="pagination-div">
+        <!-- pagination from js -->
+    </div>
+</div>
+
 {% endblock %}
 
 {% block script %}
-<script src="{% static 'network/js/index.js' %}" ></script>
+<script src="{% static 'network/js/index.js' %}" type="module" ></script>
+<script src="{% static 'network/js/feed.js' %}" type="module" ></script>
+<script src="{% static 'network/js/pagination.js' %}" type="module" ></script>
 {% endblock %}
